@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#1f5c34">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.png">
+    <title>Ceba Purio</title>
+    <style>
+        :root {
+            --g: #1f5c34;
+            --gl: #e3ede4;
+            --bg: #f1f4ee;
+            --tx: #14231a;
+            --mu: #4f5f54;
+            --am: #f2c230;
+            --ok: #1b6e2e;
+            --wa: #8a5a00;
+            --er: #a8231b;
+            --bd: #c9d4cb
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font: 18px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--tx)
+        }
+
+        #app {
+            padding: 16px 16px 104px;
+            max-width: 820px;
+            margin: auto
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 8px 0 4px
+        }
+
+        h2 {
+            font-size: 20px;
+            margin: 24px 0 8px
+        }
+
+        .mu {
+            color: var(--mu);
+            margin: 0 0 12px
+        }
+
+        nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            background: var(--g);
+            padding-bottom: env(safe-area-inset-bottom)
+        }
+
+        nav button {
+            flex: 1;
+            min-height: 64px;
+            border: 0;
+            background: none;
+            color: #cfe2d3;
+            font: inherit;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px
+        }
+
+        nav button span {
+            font-size: 22px
+        }
+
+        nav button.on {
+            color: #fff;
+            font-weight: 700;
+            box-shadow: inset 0 4px 0 var(--am)
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible {
+            outline: 3px solid var(--am);
+            outline-offset: 2px
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px
+        }
+
+        .card {
+            background: #fff;
+            border: 2px solid var(--bd);
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 14px;
+            color: var(--mu)
+        }
+
+        .card b {
+            display: block;
+            font-size: 30px;
+            color: var(--tx)
+        }
+
+        .al {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            border-left: 8px solid;
+            background: #fff
+        }
+
+        .al.ok {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .al.wa {
+            border-color: var(--wa);
+            color: #3d2900
+        }
+
+        .al.er {
+            border-color: var(--er);
+            color: var(--er)
+        }
+
+        .big {
+            width: 100%;
+            min-height: 64px;
+            margin-top: 16px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--am);
+            color: #2a2000;
+            font-weight: 700;
+            font-size: 20px;
+            font-family: inherit
+        }
+
+        .sm {
+            min-height: 44px;
+            padding: 0 16px;
+            border: 2px solid var(--g);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--g);
+            font-weight: 700;
+            font-size: 16px;
+            font-family: inherit
+        }
+
+        label {
+            display: block;
+            margin: 14px 0 0;
+            font-weight: 600
+        }
+
+        input,
+        select {
+            display: block;
+            width: 100%;
+            min-height: 52px;
+            margin-top: 6px;
+            padding: 0 12px;
+            font: inherit;
+            border: 2px solid #7d8f82;
+            border-radius: 8px;
+            background: #fff
+        }
+
+        .tabs {
+            display: flex;
+            margin: 12px 0
+        }
+
+        .tabs button {
+            flex: 1;
+            min-height: 52px;
+            border: 2px solid var(--g);
+            background: #fff;
+            color: var(--g);
+            font-weight: 700;
+            font-size: 17px;
+            font-family: inherit
+        }
+
+        .tabs button:first-child {
+            border-radius: 8px 0 0 8px
+        }
+
+        .tabs button:last-child {
+            border-radius: 0 8px 8px 0
+        }
+
+        .tabs button.on {
+            background: var(--g);
+            color: #fff
+        }
+
+        .lote {
+            background: #fff;
+            border: 2px solid var(--bd);
+            border-radius: 10px;
+            padding: 12px;
+            margin: 8px 0
+        }
+
+        .lote b {
+            font-size: 20px
+        }
+
+        .lote div {
+            color: var(--mu)
+        }
+
+        .tw {
+            overflow-x: auto
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            font-size: 16px
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border-bottom: 1px solid var(--bd);
+            text-align: left
+        }
+
+        th {
+            background: var(--gl)
+        }
+
+        #t {
+            position: fixed;
+            left: 16px;
+            right: 16px;
+            bottom: 88px;
+            padding: 14px;
+            border-radius: 8px;
+            background: var(--tx);
+            color: #fff;
+            text-align: center;
+            z-index: 9
+        }
+
+        #t.e {
+            background: var(--er)
+        }
+
+        .net {
+            font-size: 13px;
+            color: var(--mu)
+        }
+
+        @media(min-width:900px) {
+            body {
+                padding-left: 200px
+            }
+
+            nav {
+                top: 0;
+                bottom: 0;
+                right: auto;
+                width: 200px;
+                flex-direction: column;
+                justify-content: flex-start;
+                padding-top: 24px
+            }
+
+            nav button {
+                flex: none;
+                flex-direction: row;
+                justify-content: flex-start;
+                gap: 12px;
+                padding: 0 20px;
+                font-size: 17px
+            }
+
+            nav button.on {
+                box-shadow: inset 4px 0 0 var(--am)
+            }
+
+            #app {
+                padding-bottom: 40px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main id="app"></main>
+    <nav><button data-v="inicio" onclick="go('inicio')"><span>🏠</span>Inicio</button><button data-v="registrar"
+            onclick="go('registrar')"><span>✏️</span>Registrar</button><button data-v="inventario"
+            onclick="go('inventario')"><span>🐄</span>Inventario</button><button data-v="reportes"
+            onclick="go('reportes')"><span>📊</span>Reportes</button></nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8jJhs7Yy_A6hEyIt4h0311Pan4q8GE0A",
+            authDomain: "ceba-purio.firebaseapp.com",
+            projectId: "ceba-purio",
+            storageBucket: "ceba-purio.firebasestorage.app",
+            messagingSenderId: "11785256090",
+            appId: "1:11785256090:web:f6d9e6eb2fd854bd53b323",
+            measurementId: "G-3CD7NW5YBG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = initializeFirestore(app, {
+            localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+        });
+        const ref = doc(db, 'empresas', 'principal');
+        const base = { lotes: [], ali: [], pes: [], stock: [], formulas: [], conc: {}, elab: [], fases: [] };
+
+        window.subir = () => {
+            setDoc(ref, JSON.parse(JSON.stringify(S))).catch(err => console.error('Error al subir:', err));
+        };
+
+        onSnapshot(ref, snap => {
+            if (!snap.exists()) {
+                if (!snap.metadata.fromCache) window.subir();
+                return
+            }
+            if (snap.metadata.hasPendingWrites) return;
+            S = { ...base, ...snap.data() };
+            localStorage.setItem(K, JSON.stringify(S));
+            const a = document.activeElement;
+            if (!a || !['INPUT', 'SELECT'].includes(a.tagName)) render();
+        }, err => console.error('Error de sincronización:', err));
+    </script>
+    <script>
+        const K = 'cebacontrol_v1'; let S = { lotes: [], ali: [], pes: [], stock: [], formulas: [], conc: {}, elab: [], fases: [], ...JSON.parse(localStorage.getItem(K) || '{}') };
+        const save = () => { localStorage.setItem(K, JSON.stringify(S)); if (window.subir) window.subir() }, $ = s => document.querySelector(s), uid = () => Math.random().toString(36).slice(2, 9);
+        const hoy = () => new Date().toLocaleDateString('sv'), esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const SACO = 60;
+        const ens = lb => { const n = Math.floor(lb / SACO), r = +(lb - n * SACO).toFixed(1); return n + (n == 1 ? ' saco' : ' sacos') + (r ? ' + ' + r + ' lb' : '') };
+        let view = 'inicio', tab = 'ali', filtro = '', pre = '', cambio = '';
+        const go = (v, t) => { view = v; if (t) tab = t; render() };
+        function toast(m, e) { const d = document.createElement('div'); d.id = 't'; d.textContent = m; if (e) d.className = 'e'; document.body.append(d); setTimeout(() => d.remove(), 2600) }
+        const opL = s => S.lotes.map(l => `<option value="${l.id}"${l.id == s ? ' selected' : ''}>${esc(l.n)}</option>`).join('');
+        const pesL = id => S.pes.filter(p => p.l == id).sort((a, b) => a.f < b.f ? -1 : 1);
+        function gdp(id) { const a = pesL(id); if (a.length < 2) return null; const x = a.at(-2), y = a.at(-1), d = (new Date(y.f) - new Date(x.f)) / 864e5; return d > 0 ? (y.p - x.p) / d : null }
+        const vacio = () => `<div class="al wa">Aún no hay lotes. Crea el primero en Inventario o carga datos de ejemplo.<button class=sm onclick="demo()">Cargar ejemplo</button></div>`;
+        const V = {
+            inicio() {
+                const h = hoy(), hoyA = S.ali.filter(a => a.f == h), hecho = new Set(hoyA.map(a => a.l)), pend = S.lotes.filter(l => !hecho.has(l.id)), bajo = S.stock.filter(x => x.k < x.min);
+                return `<h1>Resumen de hoy</h1><p class=mu>${new Date().toLocaleDateString('es-PA', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+<div class=cards><div class=card><b>${S.lotes.length}</b>lotes</div><div class=card><b>${hoyA.reduce((s, a) => s + a.k, 0)}</b>lb dados hoy</div><div class=card><b>${S.stock.reduce((s, x) => s + x.k, 0)}</b>lb en bodega</div></div>
+<h2>Tareas del día</h2>${!S.lotes.length ? vacio() : pend.length ? pend.map(l => `<div class="al wa"><span>⚠ Falta alimentación: <b>${esc(l.n)}</b></span><button class=sm onclick="pre='${l.id}';go('registrar','ali')">Registrar</button></div>`).join('') : '<div class="al ok">✔ Alimentación de hoy al día</div>'}
+${bajo.map(x => `<div class="al er"><span>⛔ Poco alimento: <b>${esc(x.n)}</b> (${x.k} lb)</span></div>`).join('')}
+<button class=big onclick="go('registrar','ali')">Registrar alimentación</button><p class=net>${navigator.onLine ? 'En línea' : 'Sin conexión: los datos se guardan en este dispositivo'}</p>`
+            },
+            registrar() {
+                if (!S.lotes.length) return '<h1>Registrar</h1>' + vacio();
+                const t = `<h1>Registrar</h1><div class=tabs><button class="${tab == 'ali' ? 'on' : ''}" onclick="go('registrar','ali')">Alimentación</button><button class="${tab == 'pes' ? 'on' : ''}" onclick="go('registrar','pes')">Pesaje</button><button class="${tab == 'ela' ? 'on' : ''}" onclick="go('registrar','ela')">Producción</button></div>`;
+                if (tab == 'ela') return t + `<form onsubmit="return fEla(event)"><label>Fórmula<select id=fo onchange="armar()">${S.formulas.map(f => `<option value="${f.id}">${esc(f.n)}</option>`).join('')}</select></label><label>Barcadas del día<input id=nb type=number inputmode=numeric min=1 step=1 value=5 oninput="armar()"></label><h2>Insumos usados (lb)</h2><div id=ins></div><h2>Producción</h2><label>Sacos que salieron (60 lb c/u)<input id=sc type=number inputmode=numeric step=1 min=0 required></label><label>Sobra sin ensacar (lb)<input id=sb type=number inputmode=decimal step=any min=0 value=0></label><button class=big>Guardar producción</button></form>`;
+                if (tab == 'ali') return t + (S.formulas.length ? `<form onsubmit="return fAli(event)"><label>Lote<select id=l onchange="$('#a').value=S.lotes.find(x=>x.id==this.value).fo||S.formulas[0].id">${opL(pre)}</select></label><label>Concentrado<select id=a>${S.formulas.map(f => `<option value="${f.id}"${f.id == (S.lotes.find(l => l.id == (pre || S.lotes[0].id)) || {}).fo ? ' selected' : ''}>${esc(f.n)} (${ens(S.conc[f.id] || 0)})</option>`).join('')}</select></label><label>Cantidad de sacos (60 lb c/u)<input id=k type=number inputmode=decimal step=0.5 min=0 required></label><button class=big>Guardar alimentación</button></form>` : '<div class="al wa">Aún no hay fórmulas. Carga el ejemplo en Inicio.</div>');
+                return t + `<form onsubmit="return fPes(event)"><label>Lote<select id=l>${opL(pre)}</select></label><label>Peso promedio (lb)<input id=p type=number inputmode=decimal step=any min=0 required></label><button class=big>Guardar pesaje</button></form>`
+            },
+            inventario() {
+                return `<h1>Inventario</h1><h2>Lotes</h2>${S.lotes.map(l => { const a = pesL(l.id), g = gdp(l.id); return `<div class=lote><b>${esc(l.n)}</b><div>${l.c} animales · Peso prom.: ${a.length ? a.at(-1).p + ' lb' : 'sin pesaje'}${g != null ? ` · Ganancia: ${g.toFixed(2)} lb/día` : ''}</div>${fase(l)}</div>` }).join('') || '<p class=mu>Sin lotes todavía.</p>'}
+<form onsubmit="return fLote(event)"><label>Nuevo lote<input id=n placeholder="Ej. Lote C" required></label><label>Cantidad de animales<input id=c type=number inputmode=numeric min=1 required></label><label>Peso promedio inicial (lb)<input id=p type=number inputmode=decimal step=any min=0></label><button class=sm style="margin-top:12px">Agregar lote</button></form>
+<h2>Concentrado elaborado</h2>${S.formulas.map(f => `<div class="al ok"><span>${esc(f.n)}</span><b>${ens(S.conc[f.id] || 0)}</b></div>`).join('')}<h2>Insumos en bodega</h2>${S.stock.map(x => `<div class="al ${x.k < x.min ? 'er' : 'ok'}"><span>${esc(x.n)}</span><b>${x.k} lb</b></div>`).join('') || '<p class=mu>Sin alimento registrado.</p>'}
+<form onsubmit="return fStock(event)"><label>Insumo<input id=sn placeholder="Ej. Soya" required></label><label>Lb que ingresan<input id=k type=number inputmode=decimal step=any min=0 required></label><label>Avisar si baja de (lb)<input id=m type=number inputmode=numeric min=0 value=100></label><button class=sm style="margin-top:12px">Agregar alimento</button></form>`},
+            reportes() {
+                const L = S.ali.filter(a => !filtro || a.l == filtro).slice().reverse(), nm = id => esc(S.lotes.find(l => l.id == id)?.n || '—');
+                return `<h1>Reportes</h1><label>Lote<select onchange="filtro=this.value;render()"><option value="">Todos</option>${opL(filtro)}</select></label>
+<h2>Consumo total por lote</h2><div class=tw><table><tr><th>Lote<th>lb totales<th>Ganancia lb/día</tr>${S.lotes.map(l => { const g = gdp(l.id); return `<tr><td>${esc(l.n)}<td>${S.ali.filter(a => a.l == l.id).reduce((s, a) => s + a.k, 0)}<td>${g != null ? g.toFixed(2) : '—'}</tr>` }).join('')}</table></div>
+<h2>Producción</h2><div class=tw><table><tr><th>Fecha<th>Fórmula<th>Barcadas<th>Salida</tr>${S.elab.slice().reverse().slice(0, 30).map(r => `<tr><td>${r.f}<td>${nomF(r.fo)}<td>${r.nb}<td>${ens(r.out)}</tr>`).join('') || '<tr><td colspan=4>Sin registros</tr>'}</table></div><h2>Cambios de fase</h2><div class=tw><table><tr><th>Fecha<th>Lote<th>De<th>A<th>Observación</tr>${S.fases.slice().reverse().map(c => `<tr><td>${c.f}<td>${nm(c.l)}<td>${nomF(c.de)}<td>${nomF(c.a)}<td>${esc(c.nota || '—')}</tr>`).join('') || '<tr><td colspan=5>Sin cambios</tr>'}</table></div><h2>Historial de alimentación</h2><div class=tw><table><tr><th>Fecha<th>Hora<th>Lote<th>Alimento<th>lb</tr>${L.slice(0, 50).map(a => `<tr><td>${a.f}<td>${a.t}<td>${nm(a.l)}<td>${esc(a.a)}<td>${a.k}</tr>`).join('') || '<tr><td colspan=5>Sin registros</tr>'}</table></div><button class=big onclick="csv()">Descargar CSV</button>`
+            }
+        };
+        function render() { document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v == view)); $('#app').innerHTML = V[view](); if (view == 'registrar' && tab == 'ela' && S.formulas.length) armar(); scrollTo(0, 0) }
+        function nomF(id) { const f = S.formulas.find(x => x.id == id); return f ? esc(f.n) : '—' }
+        function fase(l) {
+            const info = `<div>Fórmula actual: <b>${l.fo ? nomF(l.fo) : 'sin asignar'}</b></div>`;
+            if (cambio != l.id) return info + `<button class=sm style="margin-top:8px" onclick="cambio='${l.id}';render()">Cambiar de fase</button>`;
+            return info + `<form onsubmit="return fFase(event,'${l.id}')"><label>Nueva fórmula<select id=nf>${S.formulas.filter(f => f.id != l.fo).map(f => `<option value="${f.id}">${esc(f.n)}</option>`).join('')}</select></label><label>Observación (opcional)<input id=nt placeholder="Ej. buen peso, listo para la siguiente fase"></label><button class=sm style="margin-top:12px">Guardar cambio</button> <button type=button class=sm onclick="cambio='';render()">Cancelar</button></form>`
+        }
+        function fFase(e, id) {
+            e.preventDefault(); const l = S.lotes.find(x => x.id == id), nf = $('#nf').value; if (!nf) { toast('Elige la nueva fórmula', 1); return false }
+            S.fases.push({ id: uid(), l: id, f: hoy(), de: l.fo || '', a: nf, nota: $('#nt').value.trim() }); l.fo = nf; cambio = ''; save(); toast('✔ Cambio de fase guardado'); render(); return false
+        }
+        function armar() {
+            const f = S.formulas.find(x => x.id == $('#fo').value), n = +$('#nb').value || 1;
+            $('#ins').innerHTML = f.ing.map(g => { const s = S.stock.find(x => x.id == g.i); return `<label>${esc(s.n)}<input class=ins data-i="${g.i}" type=number inputmode=decimal step=any min=0 value="${g.q * n}"></label>` }).join('')
+        }
+        function fEla(e) {
+            e.preventDefault(); const f = S.formulas.find(x => x.id == $('#fo').value);
+            const usos = [...document.querySelectorAll('.ins')].map(i => ({ i: i.dataset.i, q: +i.value || 0 })), out = +$('#sc').value * SACO + (+$('#sb').value || 0);
+            if (!f || !(out > 0)) { toast('Escribe los sacos que salieron', 1); return false }
+            const falta = usos.find(u => S.stock.find(s => s.id == u.i).k < u.q); if (falta) { toast('No alcanza: ' + S.stock.find(s => s.id == falta.i).n, 1); return false }
+            usos.forEach(u => { const s = S.stock.find(x => x.id == u.i); s.k = +(s.k - u.q).toFixed(2) }); S.conc[f.id] = +((S.conc[f.id] || 0) + out).toFixed(2);
+            S.elab.push({ id: uid(), f: hoy(), fo: f.id, nb: +$('#nb').value || 1, ins: usos, out }); save(); toast('✔ Producción guardada'); render(); return false
+        }
+        function fAli(e) {
+            e.preventDefault(); const k = +$('#k').value * SACO, f = S.formulas.find(x => x.id == $('#a').value), l = $('#l').value; if (!(k > 0) || !f) { toast('Escribe la cantidad de sacos', 1); return false }
+            const hay = S.conc[f.id] || 0; if (hay < k) { toast('No alcanza ' + f.n + ': quedan ' + ens(hay), 1); return false }
+            S.ali.push({ id: uid(), f: hoy(), t: new Date().toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit' }), l, a: f.n, fo: f.id, k }); S.conc[f.id] = +(hay - k).toFixed(2); pre = l; save(); toast('✔ Alimentación guardada'); render(); return false
+        }
+        function fPes(e) {
+            e.preventDefault(); const p = +$('#p').value, l = $('#l').value; if (!(p > 0)) { toast('Escribe un peso mayor a 0', 1); return false }
+            S.pes.push({ id: uid(), f: hoy(), l, p }); pre = l; save(); const g = gdp(l); toast('✔ Pesaje guardado' + (g != null ? ` · ${g.toFixed(2)} lb/día` : '')); render(); return false
+        }
+        function fLote(e) { e.preventDefault(); const id = uid(); S.lotes.push({ id, n: $('#n').value.trim(), c: +$('#c').value }); if (+$('#p').value > 0) S.pes.push({ id: uid(), f: hoy(), l: id, p: +$('#p').value }); save(); toast('✔ Lote agregado'); render(); return false }
+        function fStock(e) { e.preventDefault(); const n = $('#sn').value.trim(), k = +$('#k').value, x = S.stock.find(s => s.n.toLowerCase() == n.toLowerCase()); if (x) { x.k += k; x.min = +$('#m').value } else S.stock.push({ id: uid(), n, k, min: +$('#m').value }); save(); toast('✔ Alimento actualizado'); render(); return false }
+        function csv() { const r = [['fecha', 'hora', 'lote', 'alimento', 'lb'], ...S.ali.map(a => [a.f, a.t, S.lotes.find(l => l.id == a.l)?.n || '', a.a, a.k])]; const u = URL.createObjectURL(new Blob([r.map(x => x.map(v => `"${v}"`).join(',')).join('\n')], { type: 'text/csv' })), a = document.createElement('a'); a.href = u; a.download = 'alimentacion.csv'; a.click() }
+        function demo() {
+            const d = n => { const x = new Date(); x.setDate(x.getDate() - n); return x.toLocaleDateString('sv') };
+            S = {
+                formulas: [{ id: 'f1', n: 'Fórmula 1', ing: [{ i: 's2', q: 300 }, { i: 's4', q: 30 }, { i: 's6', q: 100 }] }, { id: 'f2', n: 'Fórmula 2', ing: [{ i: 's2', q: 300 }, { i: 's4', q: 40 }, { i: 's6', q: 80 }] }, { id: 'f3', n: 'Fórmula 3', ing: [{ i: 's2', q: 300 }, { i: 's4', q: 50 }, { i: 's6', q: 60 }] }, { id: 'f4', n: 'Fórmula 4', ing: [{ i: 's2', q: 300 }, { i: 's4', q: 60 }, { i: 's6', q: 40 }] }], conc: { f1: 200, f2: 500, f3: 300, f4: 0 }, elab: [], fases: [],
+                stock: [{ id: 's2', n: 'Maíz', k: 5000, min: 1500 }, { id: 's3', n: 'Sal mineral', k: 90, min: 100 }, { id: 's4', n: 'Soya', k: 800, min: 250 }, { id: 's5', n: 'Melaza', k: 650, min: 220 }, { id: 's6', n: 'Paca', k: 3000, min: 800 }], lotes: [{ id: 'l1', n: 'Lote A', c: 24, fo: 'f2' }, { id: 'l2', n: 'Lote B', c: 18, fo: 'f1' }],
+                pes: [{ id: 'p1', f: d(14), l: 'l1', p: 685 }, { id: 'p2', f: d(0), l: 'l1', p: 725 }, { id: 'p3', f: d(14), l: 'l2', p: 630 }, { id: 'p4', f: d(0), l: 'l2', p: 665 }],
+                ali: [{ id: 'a1', f: d(1), t: '07:30', l: 'l1', a: 'Fórmula 2', fo: 'f2', k: 180 }, { id: 'a2', f: d(1), t: '07:50', l: 'l2', a: 'Fórmula 1', fo: 'f1', k: 120 }]
+            }; save(); render()
+        }
+        addEventListener('online', render); addEventListener('offline', render);
+        if ('serviceWorker' in navigator && location.protocol != 'file:') navigator.serviceWorker.register('sw.js');
+        render();
+    </script>
+</body>
+
+</html>
