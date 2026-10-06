@@ -334,7 +334,8 @@
     <main id="app"></main>
     <nav><button data-v="inicio" onclick="go('inicio')"><span>🏠</span>Inicio</button><button data-v="registrar"
             onclick="go('registrar')"><span>✏️</span>Registrar</button><button data-v="inventario"
-            onclick="go('inventario')"><span>🐄</span>Inventario</button><button data-v="reportes"
+            onclick="go('inventario')"><span>🐄</span>Inventario</button><button data-v="costos"
+            onclick="go('costos')"><span>💲</span>Costos</button><button data-v="reportes"
             onclick="go('reportes')"><span>📊</span>Reportes</button></nav>
 
     <script type="module">
@@ -422,7 +423,7 @@ window.salir = async () => {
         const hoy = () => new Date().toLocaleDateString('sv'), esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const SACO = 60;
         const ens = lb => { const n = Math.floor(lb / SACO), r = +(lb - n * SACO).toFixed(1); return n + (n == 1 ? ' saco' : ' sacos') + (r ? ' + ' + r + ' lb' : '') };
-        let view = 'inicio', tab = 'ali', filtro = '', pre = '', cambio = '', editF = '';
+        let view = 'inicio', tab = 'ali', filtro = '', pre = '', cambio = '', editF = '', cf = '', cd = 14;
         const MON = 'B/.', mo = n => MON + ' ' + (+n || 0).toFixed(2);
         const go = (v, t) => { view = v; if (t) tab = t; render() };
         function toast(m, e) { const d = document.createElement('div'); d.id = 't'; d.textContent = m; if (e) d.className = 'e'; document.body.append(d); setTimeout(() => d.remove(), 2600) }
@@ -455,6 +456,22 @@ ${bajo.map(x => `<div class="al er"><span>⛔ Poco alimento: <b>${esc(x.n)}</b> 
 <form onsubmit="return fStock(event)"><h3>Registrar compra de insumo</h3><label>Insumo<input id=sn list=sl placeholder="Ej. Soya" required><datalist id=sl>${S.stock.map(x => `<option value="${esc(x.n)}">`).join('')}</datalist></label><label>Cantidad recibida<input id=k type=number inputmode=decimal step=any min=0 required oninput="calcLb()"></label><label>Unidad<select id=ku onchange="calcLb()"><option value=1>Libras</option><option value=100>Quintales (100 lb)</option><option value=saco>Sacos</option></select></label><label id=kpl style="display:none">Peso de cada saco (lb)<input id=kp type=number inputmode=decimal step=any min=0 value=100 oninput="calcLb()"></label><p class=mu id=kt></p><label>Total pagado (B/.)<input id=tp type=number inputmode=decimal step=any min=0 value=0></label><label>Avisar si baja de (lb)<input id=m type=number inputmode=numeric min=0 value=100></label><button class=sm style="margin-top:12px">Guardar compra</button></form>
 <form onsubmit="return fAjuste(event)"><h3>Ajustar por conteo físico</h3><label>Insumo<select id=aj>${S.stock.map(x => `<option value="${x.id}">${esc(x.n)}</option>`).join('')}</select></label><label>Cantidad real (lb)<input id=ar type=number inputmode=decimal step=any min=0 required></label><button class=sm style="margin-top:12px">Ajustar inventario</button></form>
 <p><button class=sm onclick="borrarTodo()">Borrar todos los datos</button></p>`},
+            costos() {
+                const dias = +cd, ds = Array.from({ length: dias }, (_, i) => new Date(Date.now() - i * 864e5).toLocaleDateString('sv')), desde = ds[dias - 1];
+                const FS = S.formulas.filter(f => !cf || f.id == cf), fa = S.ali.filter(a => a.f >= desde && (!cf || a.fo == cf)), fe = S.elab.filter(r => r.f >= desde && (!cf || r.fo == cf));
+                const sum = (a, g) => a.reduce((t, x) => t + (g(x) || 0), 0), act = ds.filter(d => fa.some(a => a.f == d) || fe.some(r => r.f == d));
+                const rF = FS.map(f => { const pe = fe.filter(r => r.fo == f.id), al = fa.filter(a => a.fo == f.id); return `<tr><td>${esc(f.n)}<td>${ens(sum(pe, r => r.out))}<td>${mo(sum(pe, r => r.costo))}<td>${S.cc[f.id] ? mo(S.cc[f.id] * SACO) : '—'}<td>${S.cc[f.id] ? mo(S.cc[f.id] * 100) : '—'}<td>${ens(sum(al, a => a.k))}<td>${mo(sum(al, a => a.cs))}<td>${ens(S.conc[f.id] || 0)}</tr>` }).join('') || '<tr><td colspan=8>Sin fórmulas</tr>';
+                const rD = act.map(d => { const a = fa.filter(x => x.f == d), e = fe.filter(x => x.f == d); return `<tr><td>${d}<td>${ens(sum(a, x => x.k))}<td>${mo(sum(a, x => x.cs))}<td>${ens(sum(e, x => x.out))}<td>${mo(sum(e, x => x.costo))}</tr>` }).join('') || '<tr><td colspan=5>Sin movimientos en este período</tr>';
+                const uso = (d, id) => sum(fe.filter(r => !d || r.f == d), r => sum((r.ins || []).filter(u => u.i == id), u => u.q));
+                const rI = act.map(d => `<tr><td>${d}${S.stock.map(x => `<td>${+uso(d, x.id).toFixed(1) || '—'}`).join('')}</tr>`).join('');
+                const rT = `<tr><th>Total${S.stock.map(x => `<th>${+uso('', x.id).toFixed(1)}`).join('')}</tr><tr><th>Promedio/día${S.stock.map(x => `<th>${+(uso('', x.id) / dias).toFixed(1)}`).join('')}</tr>`;
+                const rR = S.stock.map(x => { const u = uso('', x.id), pr = u / dias; return `<tr><td>${esc(x.n)}<td>${+u.toFixed(1)}<td>${mo(u * (x.c || 0))}<td>${+pr.toFixed(1)}<td>${x.k}<td>${pr > 0 ? Math.floor(x.k / pr) + ' días' : '—'}</tr>` }).join('') || '<tr><td colspan=6>Sin insumos</tr>';
+                return `<h1>Costos y consumo</h1><label>Fórmula<select onchange="cf=this.value;render()"><option value="">Todas</option>${S.formulas.map(f => `<option value="${f.id}" ${cf == f.id ? 'selected' : ''}>${esc(f.n)}</option>`).join('')}</select></label><label>Período<select onchange="cd=this.value;render()">${[7, 14, 30, 60].map(n => `<option value=${n} ${dias == n ? 'selected' : ''}>Últimos ${n} días</option>`).join('')}</select></label>
+<h2>Resumen por fórmula</h2><div class=tw><table><tr><th>Fórmula<th>Producido<th>Costo producción<th>Costo por saco (60 lb)<th>Costo por quintal<th>Alimentado<th>Gasto alimentación<th>En existencia</tr>${rF}</table></div>
+<h2>Gasto diario</h2><div class=tw><table><tr><th>Fecha<th>Alimentado<th>Gasto alimentación<th>Producido<th>Costo producción</tr>${rD}<tr><th>Total<th>${ens(sum(fa, x => x.k))}<th>${mo(sum(fa, x => x.cs))}<th>${ens(sum(fe, x => x.out))}<th>${mo(sum(fe, x => x.costo))}</tr></table></div>
+<h2>Consumo diario de insumos (lb)</h2><div class=tw><table><tr><th>Fecha${S.stock.map(x => `<th>${esc(x.n)}`).join('')}</tr>${rI}${S.stock.length ? rT : ''}</table></div>
+<h2>Resumen de insumos</h2><div class=tw><table><tr><th>Insumo<th>Usado (lb)<th>Costo<th>Promedio lb/día<th>Existencia lb<th>Alcanza</tr>${rR}</table></div><p class=mu>El consumo de insumos se calcula con las producciones registradas. El costo usa el precio promedio actual de cada insumo.</p>`
+            },
             reportes() {
                 const L = S.ali.filter(a => !filtro || a.l == filtro).slice().reverse(), nm = id => esc(S.lotes.find(l => l.id == id)?.n || '—');
                 return `<h1>Reportes</h1><label>Lote<select onchange="filtro=this.value;render()"><option value="">Todos</option>${opL(filtro)}</select></label>
