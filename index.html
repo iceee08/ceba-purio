@@ -314,6 +314,23 @@
 </head>
 
 <body>
+
+    <div id="login"
+        style="position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px">
+        <div style="width:100%;max-width:380px">
+            <img src="icon-192.png" alt="" style="width:96px;display:block;margin:0 auto 12px;border-radius:20px">
+            <h1 style="text-align:center">Control de la ganadera de Purio</h1>
+            <p id="lcarga" class="mu" style="text-align:center">Cargando…</p>
+            <form id="lform" hidden onsubmit="return entrar(event)">
+                <label>Correo<input id="lc" type="email" autocomplete="username" required></label>
+                <label>Contraseña<input id="lp" type="password" autocomplete="current-password" required></label>
+                <p id="lerr" style="color:var(--er);min-height:1.4em"></p>
+                <button class="big">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+
     <main id="app"></main>
     <nav><button data-v="inicio" onclick="go('inicio')"><span>🏠</span>Inicio</button><button data-v="registrar"
             onclick="go('registrar')"><span>✏️</span>Registrar</button><button data-v="inventario"
@@ -323,6 +340,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB8jJhs7Yy_A6hEyIt4h0311Pan4q8GE0A",
@@ -338,24 +356,65 @@
         const db = initializeFirestore(app, {
             localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
         });
+        const auth = getAuth(app);
+        console.log ('1: auth listo');
         const ref = doc(db, 'empresas', 'principal');
         const base = { lotes: [], ali: [], pes: [], stock: [], formulas: [], conc: {}, elab: [], fases: [] };
+        const DATA_V = 1;
+        let bloqueado = false;
 
-        window.subir = () => {
-            setDoc(ref, JSON.parse(JSON.stringify(S))).catch(err => console.error('Error al subir:', err));
-        };
+      let escuchando = null;
 
-        onSnapshot(ref, snap => {
-            if (!snap.exists()) {
-                if (!snap.metadata.fromCache) window.subir();
-                return
-            }
-            if (snap.metadata.hasPendingWrites) return;
-            S = { ...base, ...snap.data() };
-            localStorage.setItem(K, JSON.stringify(S));
-            const a = document.activeElement;
-            if (!a || !['INPUT', 'SELECT'].includes(a.tagName)) render();
-        }, err => console.error('Error de sincronización:', err));
+window.subir = () => {
+    if (bloqueado || !auth.currentUser) return;
+    setDoc(ref, JSON.parse(JSON.stringify({ ...S, v: DATA_V }))).catch(err => console.error('Error al subir:', err));
+};
+
+function escuchar() {
+    return onSnapshot(ref, snap => {
+        if (!snap.exists()) {
+            if (!snap.metadata.fromCache) window.subir();
+            return
+        }
+        if (snap.metadata.hasPendingWrites) return;
+        const d = snap.data();
+        if ((d.v || 1) > DATA_V) { bloqueado = true; toast('Hay una versión nueva de la app: recarga la página', 1); return }
+        bloqueado = false;
+        S = { ...JSON.parse(JSON.stringify(base)), ...d, v: DATA_V };
+        localStorage.setItem(K, JSON.stringify(S));
+        const a = document.activeElement;
+        if (!a || !['INPUT', 'SELECT'].includes(a.tagName)) render();
+    }, err => console.error('Error de sincronización:', err));
+}
+
+onAuthStateChanged(auth, user => {
+    console.log('2: sesión: ', user ? user.email : 'ninguna');
+    if (escuchando) { escuchando(); escuchando = null }
+    if (user) {
+        $('#login').style.display = 'none';
+        escuchando = escuchar();
+    } else {
+        $('#login').style.display = 'flex';
+        $('#lcarga').hidden = true;
+        $('#lform').hidden = false;
+    }
+});
+
+window.entrar = async e => {
+    e.preventDefault();
+    $('#lerr').textContent = '';
+    try { await signInWithEmailAndPassword(auth, $('#lc').value.trim(), $('#lp').value) }
+    catch (err) { $('#lerr').textContent = 'Correo o contraseña incorrectos' }
+    return false
+};
+
+window.salir = async () => {
+    await signOut(auth);
+    localStorage.removeItem(K);
+    S = JSON.parse(JSON.stringify(base));
+    render();
+}; 
+
     </script>
     <script>
         const K = 'cebacontrol_v1'; let S = { lotes: [], ali: [], pes: [], stock: [], formulas: [], conc: {}, elab: [], fases: [], ...JSON.parse(localStorage.getItem(K) || '{}') };
@@ -377,7 +436,7 @@
 <div class=cards><div class=card><b>${S.lotes.length}</b>lotes</div><div class=card><b>${hoyA.reduce((s, a) => s + a.k, 0)}</b>lb dados hoy</div><div class=card><b>${S.stock.reduce((s, x) => s + x.k, 0)}</b>lb en bodega</div></div>
 <h2>Tareas del día</h2>${!S.lotes.length ? vacio() : pend.length ? pend.map(l => `<div class="al wa"><span>⚠ Falta alimentación: <b>${esc(l.n)}</b></span><button class=sm onclick="pre='${l.id}';go('registrar','ali')">Registrar</button></div>`).join('') : '<div class="al ok">✔ Alimentación de hoy al día</div>'}
 ${bajo.map(x => `<div class="al er"><span>⛔ Poco alimento: <b>${esc(x.n)}</b> (${x.k} lb)</span></div>`).join('')}
-<button class=big onclick="go('registrar','ali')">Registrar alimentación</button><p class=net>${navigator.onLine ? 'En línea' : 'Sin conexión: los datos se guardan en este dispositivo'}</p>`
+<button class=big onclick="go('registrar','ali')">Registrar alimentación</button><p class=net>${navigator.onLine ? 'En línea' : 'Sin conexión: los datos se guardan en este dispositivo'}</p> <p><button class=sm onclick="salir()">Cerrar sesión</button></p>`
             },
             registrar() {
                 if (!S.lotes.length) return '<h1>Registrar</h1>' + vacio();
