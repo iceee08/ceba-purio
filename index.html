@@ -427,7 +427,7 @@ window.salir = async () => {
         const ens = lb => { const n = Math.floor(lb / SACO), r = +(lb - n * SACO).toFixed(1); return n + (n == 1 ? ' saco' : ' sacos') + (r ? ' + ' + r + ' lb' : '') };
         let view = 'inicio', tab = 'ali', filtro = '', pre = '', cambio = '', editF = '', cf = '', cd = 14, fdSel = '';
         const MON = 'B/.', mo = n => MON + ' ' + (+n || 0).toFixed(2);
-        const go = (v, t) => { view = v; if (t) tab = t; render() };
+        const go = (v, t) => { const nuevo = view != v || (t && t != tab); view = v; if (t) tab = t; render(); if (nuevo) scrollTo(0, 0) };
         function toast(m, e) { const d = document.createElement('div'); d.id = 't'; d.textContent = m; if (e) d.className = 'e'; document.body.append(d); setTimeout(() => d.remove(), 2600) }
         const opL = s => S.lotes.map(l => `<option value="${l.id}"${l.id == s ? ' selected' : ''}>${esc(l.n)}</option>`).join('');
         const pesL = id => S.pes.filter(p => p.l == id).sort((a, b) => a.f < b.f ? -1 : 1);
@@ -457,6 +457,7 @@ ${bajo.map(x => `<div class="al er"><span>⛔ Poco alimento: <b>${esc(x.n)}</b> 
 <h2>Insumos en bodega</h2>${S.stock.map(x => `<div class="al ${!x.est && x.k < x.min ? 'er' : 'ok'}"><span>${esc(x.n)}${x.c ? ' · ' + mo(x.c) + '/lb' : ''}${x.est ? '<br><small>≈ Cantidad aproximada: no se descuenta todavía</small>' : ''}</span><b>${x.est ? '≈ ' : ''}${x.k} lb</b></div>`).join('') || '<p class=mu>Sin insumos registrados.</p>'}
 <form onsubmit="return fStock(event)">${fdIn()}<h3>Registrar compra de insumo</h3><label>Insumo<input id=sn list=sl placeholder="Ej. Soya" required><datalist id=sl>${S.stock.map(x => `<option value="${esc(x.n)}">`).join('')}</datalist></label><label>Cantidad recibida<input id=k type=number inputmode=decimal step=any min=0 required oninput="calcLb()"></label><label>Unidad<select id=ku onchange="calcLb()"><option value=1>Libras</option><option value=100>Quintales (100 lb)</option><option value=saco>Sacos</option></select></label><label id=kpl style="display:none">Peso de cada saco (lb)<input id=kp type=number inputmode=decimal step=any min=0 value=100 oninput="calcLb()"></label><p class=mu id=kt></p><label>Total pagado (B/.)<input id=tp type=number inputmode=decimal step=any min=0 value=0></label><label>Avisar si baja de (lb)<input id=m type=number inputmode=numeric min=0 value=100></label><label style="display:flex;gap:8px;align-items:center"><input id=ae type=checkbox style="width:auto"> Inventario inicial aproximado (no se descuenta todavía)</label><p class=mu>Marca esto al registrar por primera vez un insumo cuya cantidad aún no se contó exacta. Solo aplica a insumos nuevos.</p><button class=sm style="margin-top:12px">Guardar compra</button></form>
 <form onsubmit="return fAjuste(event)"><h3>Ajustar por conteo físico</h3><label>Insumo<select id=aj>${S.stock.map(x => `<option value="${x.id}">${esc(x.n)}</option>`).join('')}</select></label>${uHTML('a', 'Cantidad real contada')}<button class=sm style="margin-top:12px">Ajustar inventario</button></form>
+${S.stock.length ? `<form onsubmit="return fPrecio(event)"><h3>Corregir precio de un insumo</h3><label>Insumo<select id=ps onchange="verPrecio()">${S.stock.map(x => `<option value="${x.id}">${esc(x.n)}</option>`).join('')}</select></label><p class=mu id=pa></p><label>Precio (B/.)<input id=pq type=number inputmode=decimal step=any min=0 required oninput="calcP()"></label><label>Precio por<select id=pu onchange="calcP()"><option value=1>Libra</option><option value=100>Quintal (100 lb)</option><option value=saco>Saco</option></select></label><label id=ppl style="display:none">Peso de cada saco (lb)<input id=pp type=number inputmode=decimal step=any min=0 value=100 oninput="calcP()"></label><p class=mu id=pt></p><label style="display:flex;gap:8px;align-items:center"><input id=pr type=checkbox checked style="width:auto"> Recalcular también los costos ya registrados</label><button class=sm style="margin-top:12px">Guardar precio</button></form>` : ''}
 ${S.stock.some(x => x.est) ? `<form onsubmit="return fActivar(event)"><h3>Activar descuento con conteo exacto</h3><p class=mu>Para los insumos marcados como aproximados. Al activar, el inventario pasa a descontarse. Si ya se produjo desde la fecha del conteo, eso se resta solo.</p><label>Insumo<select id=xs>${S.stock.filter(x => x.est).map(x => `<option value="${x.id}">${esc(x.n)}</option>`).join('')}</select></label>${uHTML('x', 'Cantidad exacta contada')}<label>Fecha del conteo (al terminar ese día)<input id=xf type=date value="${hoy()}" max="${hoy()}"></label><button class=sm style="margin-top:12px">Activar descuento</button></form>` : ''}
 <p><button class=sm onclick="borrarTodo()">Borrar todos los datos</button></p>`},
             costos() {
@@ -483,7 +484,7 @@ ${S.stock.some(x => x.est) ? `<form onsubmit="return fActivar(event)"><h3>Activa
 <h2>Producción</h2><div class=tw><table><tr><th>Fecha<th>Fórmula<th>Barcadas<th>Salida<th>Costo</tr>${S.elab.slice().reverse().slice(0, 30).map(r => `<tr><td>${r.f}<td>${nomF(r.fo)}<td>${r.nb}<td>${ens(r.out)}<td>${r.costo != null ? mo(r.costo) : '—'}</tr>`).join('') || '<tr><td colspan=5>Sin registros</tr>'}</table></div><h2>Compras y ajustes de insumos</h2><div class=tw><table><tr><th>Fecha<th>Tipo<th>Insumo<th>lb<th>Total</tr>${S.compras.slice().reverse().slice(0, 30).map(c => `<tr><td>${c.f}<td>${c.t == 'ajuste' ? 'Ajuste' : c.t == 'inicial' ? 'Inventario inicial' : 'Compra'}<td>${esc(c.ref)}<td>${c.lb}<td>${c.t == 'ajuste' ? '—' : mo(c.total)}</tr>`).join('') || '<tr><td colspan=5>Sin registros</tr>'}</table></div><h2>Cambios de fase</h2><div class=tw><table><tr><th>Fecha<th>Lote<th>De<th>A<th>Observación</tr>${S.fases.slice().reverse().map(c => `<tr><td>${c.f}<td>${nm(c.l)}<td>${nomF(c.de)}<td>${nomF(c.a)}<td>${esc(c.nota || '—')}</tr>`).join('') || '<tr><td colspan=5>Sin cambios</tr>'}</table></div><h2>Historial de alimentación</h2><div class=tw><table><tr><th>Fecha<th>Hora<th>Lote<th>Alimento<th>lb</tr>${L.slice(0, 50).map(a => `<tr><td>${a.f}<td>${a.t}<td>${nm(a.l)}<td>${esc(a.a)}<td>${a.k}</tr>`).join('') || '<tr><td colspan=5>Sin registros</tr>'}</table></div><button class=big onclick="csv()">Descargar CSV</button>`
             }
         };
-        function render() { document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v == view)); $('#app').innerHTML = V[view](); if (view == 'registrar' && tab == 'ela' && S.formulas.length) armar(); scrollTo(0, 0) }
+        function render() { document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v == view)); $('#app').innerHTML = V[view](); if (view == 'registrar' && tab == 'ela' && S.formulas.length) armar(); if (view == 'inventario') verPrecio() }
         function nomF(id) { const f = S.formulas.find(x => x.id == id); return f ? esc(f.n) : '—' }
         function fase(l) {
             const info = `<div>Fórmula actual: <b>${l.fo ? nomF(l.fo) : 'sin asignar'}</b></div>`;
@@ -505,7 +506,7 @@ ${S.stock.some(x => x.est) ? `<form onsubmit="return fActivar(event)"><h3>Activa
             if (!f || !(out > 0)) { toast('Escribe los sacos que salieron', 1); return false }
             const falta = usos.find(u => { const s = S.stock.find(x => x.id == u.i); return !s.est && s.k < u.q }); if (falta) { toast('No alcanza: ' + S.stock.find(s => s.id == falta.i).n, 1); return false }
             const costo = usos.reduce((t, u) => t + u.q * (S.stock.find(s => s.id == u.i).c || 0), 0), antes = S.conc[f.id] || 0;
-            usos.forEach(u => { const s = S.stock.find(x => x.id == u.i); if (!s.est) s.k = +(s.k - u.q).toFixed(2) }); S.conc[f.id] = +(antes + out).toFixed(2); S.cc[f.id] = +(((antes * (S.cc[f.id] || 0)) + costo) / (antes + out)).toFixed(4);
+            usos.forEach(u => { const s = S.stock.find(x => x.id == u.i); u.c = s.c || 0; if (!s.est) s.k = +(s.k - u.q).toFixed(2) }); S.conc[f.id] = +(antes + out).toFixed(2); S.cc[f.id] = +(((antes * (S.cc[f.id] || 0)) + costo) / (antes + out)).toFixed(4);
             S.elab.push({ id: uid(), f: fdv(), fo: f.id, nb: +$('#nb').value || 1, ins: usos, out, costo: +costo.toFixed(2) }); save(); toast('✔ Producción guardada'); render(); return false
         }
         function fAli(e) {
@@ -530,6 +531,23 @@ ${S.stock.some(x => x.est) ? `<form onsubmit="return fActivar(event)"><h3>Activa
             else if (x) { x.c = x.k + k > 0 ? +(((x.k * (x.c || 0)) + tp) / (x.k + k)).toFixed(4) : 0; x.k = +(x.k + k).toFixed(2); x.min = +$('#m').value }
             else { const est = $('#ae').checked; if (est) t = 'inicial'; S.stock.push({ id: uid(), n, k, c: k > 0 ? +(tp / k).toFixed(4) : 0, min: +$('#m').value, est }) }
             S.compras.push({ id: uid(), f: fdv(), t, ref: n, lb: k, total: tp }); save(); toast(x && x.est ? '✔ Compra guardada (se sumará al activar el descuento)' : '✔ Guardado'); render(); return false
+        }
+        const lbP = () => { const u = $('#pu').value, q = +$('#pq').value || 0; return u == 'saco' ? q / (+$('#pp').value || 1) : q / +u };
+        function calcP() { $('#ppl').style.display = $('#pu').value == 'saco' ? '' : 'none'; $('#pt').textContent = '= ' + mo(lbP()) + ' por lb' }
+        function verPrecio() { const x = S.stock.find(s => s.id == $('#ps').value); if ($('#pa')) $('#pa').textContent = x ? 'Precio actual: ' + mo(x.c || 0) + ' por lb (' + mo((x.c || 0) * 100) + ' por quintal)' : '' }
+        function recalcCostos() {
+            S.elab.forEach(r => (r.ins || []).forEach(u => { if (u.c == null) u.c = S.stock.find(x => x.id == u.i)?.c || 0 }));
+            S.formulas.forEach(f => {
+                const evs = [...S.elab.filter(r => r.fo == f.id).map(r => ({ e: 1, f: r.f, r })), ...S.ali.filter(a => a.fo == f.id).map(a => ({ e: 0, f: a.f, r: a }))].sort((x, y) => x.f < y.f ? -1 : x.f > y.f ? 1 : y.e - x.e);
+                let lb = 0, cs = 0, cc = S.cc[f.id] || 0;
+                evs.forEach(v => { if (v.e) { v.r.costo = +(v.r.ins || []).reduce((t, u) => t + u.q * (u.c || 0), 0).toFixed(2); lb += v.r.out; cs += v.r.costo; cc = lb > 0 ? cs / lb : cc } else { v.r.cs = +(v.r.k * cc).toFixed(2); lb -= v.r.k; cs -= v.r.k * cc } });
+                if (evs.length) S.cc[f.id] = +cc.toFixed(4)
+            })
+        }
+        function fPrecio(e) {
+            e.preventDefault(); const x = S.stock.find(s => s.id == $('#ps').value), c = +lbP().toFixed(4); if (!x) return false;
+            x.c = c; if ($('#pr').checked) { S.elab.forEach(r => (r.ins || []).forEach(u => { if (u.i == x.id) u.c = c })); recalcCostos() }
+            save(); toast('✔ Precio de ' + x.n + ': ' + mo(c) + ' por lb'); render(); return false
         }
         function fActivar(e) {
             e.preventDefault(); const x = S.stock.find(s => s.id == $('#xs').value), r = lbX('x'), d = $('#xf').value || hoy(); if (!x) return false;
