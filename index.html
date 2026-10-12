@@ -439,11 +439,16 @@ window.salir = async () => {
         const vacio = () => `<div class="al wa">Aún no hay lotes. Crea el primero en Inventario.</div>`;
         const V = {
             inicio() {
-                const h = hoy(), hoyA = S.ali.filter(a => a.f == h), hecho = new Set(hoyA.map(a => a.l)), pend = act().filter(l => !hecho.has(l.id)), bajo = S.stock.filter(x => x.tk ? (x.tn || 0) <= x.min : (!x.est && x.k < x.min));
+                const h = hoy(), ay = new Date(Date.now() - 864e5).toLocaleDateString('sv'), sc = (f, l) => S.ali.filter(a => a.f == f && (!l || a.l == l)).reduce((s, a) => s + a.k, 0) / SACO, fmt = n => +n.toFixed(1), sac = n => fmt(n) + (fmt(n) == 1 ? ' saco' : ' sacos');
+                const hoyA = S.ali.filter(a => a.f == h), hecho = new Set(hoyA.map(a => a.l)), pend = act().filter(l => !hecho.has(l.id)), bajo = S.stock.filter(x => x.tk ? (x.tn || 0) <= x.min : (!x.est && x.k < x.min));
+                const cons = f => Math.max(S.ali.filter(a => a.f == h && a.fo == f.id).reduce((s, a) => s + a.k, 0), S.ali.filter(a => a.f == ay && a.fo == f.id).reduce((s, a) => s + a.k, 0)), faltaP = S.formulas.filter(f => cons(f) > 0 && (S.conc[f.id] || 0) < cons(f));
+                const lotesH = !act().length ? vacio() : act().map(l => { const fo = S.formulas.find(f => f.id == l.fo), d = hecho.has(l.id); return `<div class=lote><b>${esc(l.n)}</b> · ${l.c} animales<div>${fo ? 'Fórmula ' + esc(fo.n) + ' · ' : ''}${d ? '<b>' + sac(sc(h, l.id)) + '</b> hoy' : '<span style="color:var(--wa)"><b>Falta registrar</b></span>'}</div><div class=mu style="margin:0">Ayer: ${sac(sc(ay, l.id))}</div></div>` }).join('');
                 return `<h1>Resumen de hoy</h1><p class=mu>${new Date().toLocaleDateString('es-PA', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-<div class=cards><div class=card><b>${act().length}</b>lotes</div><div class=card><b>${hoyA.reduce((s, a) => s + a.k, 0)}</b>lb dados hoy</div><div class=card><b>${S.stock.filter(x => !x.cnt && !x.tk).reduce((s, x) => s + x.k, 0)}</b>lb en bodega</div></div>
-<h2>Tareas del día</h2>${!S.lotes.length ? vacio() : pend.length ? pend.map(l => `<div class="al wa"><span>⚠ Falta alimentación: <b>${esc(l.n)}</b></span><button class=sm onclick="pre='${l.id}';go('registrar','ali')">Registrar</button></div>`).join('') : '<div class="al ok">✔ Alimentación de hoy al día</div>'}
-${bajo.map(x => `<div class="al er"><span>⛔ Poco alimento: <b>${esc(x.n)}</b> (${uCant(x, x.k)})</span></div>`).join('')}
+<h2>Sacos repartidos hoy</h2>${lotesH}
+${act().length ? `<div class=cards><div class=card><b>${fmt(sc(h))}</b>sacos repartidos hoy</div><div class=card><b>${act().length - pend.length} de ${act().length}</b>lotes alimentados</div></div>` : ''}
+<h2>Sacos de alimento hechos</h2>${S.formulas.map(f => { const q = S.conc[f.id] || 0, c = cons(f); return `<div class="al ${q < SACO || (c > 0 && q < c) ? 'er' : 'ok'}"><span>${esc(f.n)}</span><b>${ens(q)}</b></div>` }).join('') || '<p class=mu>Aún no hay fórmulas.</p>'}
+<p class=mu>Es lo que hay disponible hoy en bodega, ya descontado lo repartido.</p>
+<h2>Tareas del día</h2>${!S.lotes.length ? vacio() : ''}${pend.map(l => `<div class="al wa"><span>⚠ Falta alimentación: <b>${esc(l.n)}</b></span><button class=sm onclick="pre='${l.id}';go('registrar','ali')">Registrar</button></div>`).join('')}${faltaP.map(f => `<div class="al wa"><span>⚠ Falta producción: <b>${esc(f.n)}</b> (quedan ${ens(S.conc[f.id] || 0)})</span><button class=sm onclick="go('registrar','ela')">Registrar</button></div>`).join('')}${bajo.map(x => `<div class="al er"><span>⛔ Poco alimento: <b>${esc(x.n)}</b> (${uCant(x, x.k)})</span></div>`).join('')}${S.lotes.length && !pend.length && !faltaP.length && !bajo.length ? '<div class="al ok">✔ Todo al día</div>' : ''}
 <button class=big onclick="go('registrar','ali')">Registrar alimentación</button><p class=net>${navigator.onLine ? 'En línea' : 'Sin conexión: los datos se guardan en este dispositivo'}</p> <p><button class=sm onclick="salir()">Cerrar sesión</button></p>`
             },
             registrar() {
