@@ -391,7 +391,7 @@
         const auth = getAuth(app);
         console.log ('1: auth listo');
         const ref = doc(db, 'empresas', 'principal');
-        const base = { lotes: [], ali: [], pes: [], stock: [], formulas: [], conc: {}, cc: {}, elab: [], fases: [], compras: [] };
+        const base = { sc: [], lotes: [], ali: [], pes: [], stock: [], formulas: [], conc: {}, cc: {}, elab: [], fases: [], compras: [] };
         const DATA_V = 2;
         let bloqueado = false;
 
@@ -455,7 +455,7 @@ window.salir = async () => {
 
     </script>
     <script>
-        const K = 'cebacontrol_v1', vacioS = () => ({ lotes: [], ali: [], pes: [], stock: [], conc: {}, cc: {}, elab: [], fases: [], compras: [], formulas: [1, 2, 3, 4].map(i => ({ id: 'f' + i, n: 'Fórmula ' + i, ing: [] })) }); let S = { ...vacioS(), ...JSON.parse(localStorage.getItem(K) || '{}') };
+        const K = 'cebacontrol_v1', vacioS = () => ({ sc: [], lotes: [], ali: [], pes: [], stock: [], conc: {}, cc: {}, elab: [], fases: [], compras: [], formulas: [1, 2, 3, 4].map(i => ({ id: 'f' + i, n: 'Fórmula ' + i, ing: [] })) }); let S = { ...vacioS(), ...JSON.parse(localStorage.getItem(K) || '{}') };
         const save = () => { localStorage.setItem(K, JSON.stringify(S)); if (window.subir) window.subir() }, $ = s => document.querySelector(s), uid = () => Math.random().toString(36).slice(2, 9);
         const hoy = () => new Date().toLocaleDateString('sv'), esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const SACO = 60;
@@ -498,6 +498,7 @@ ${act().length ? `<div class=cards><div class=card><b>${fmt(sc(h))}</b>sacos rep
 <form onsubmit="return fLote(event)">${fdIn()}<h3>Empezar nuevo lote</h3><label>Nombre del lote<input id=n placeholder="Ej. Lote C" required></label>${grupoHTML('ng', 'Pesos de cada animal (lb)', 'Precio de cada animal (B/.)', 'Total pagado (B/.)')}<p class=mu>Los animales que lleguen después se agregan al lote con "Agregar ingreso".</p><button class=sm style="margin-top:12px">Empezar lote</button></form>
 ` : ivT == 'form' ? `<h2>Concentrado elaborado</h2>${S.formulas.map(f => `<div class="al ok"><span>${esc(f.n)}${S.cc[f.id] ? ' · ' + mo(S.cc[f.id] * SACO) + ' por saco' : ''}</span><b>${ens(S.conc[f.id] || 0)}</b></div>`).join('')}
 <form onsubmit="return fIni(event)"><h3>Registrar concentrado que ya estaba hecho</h3><p class=mu>Para el alimento que ya existe y no salió de una producción de la app. No descuenta insumos.</p>${fdIn()}<label>Fórmula<select id=if>${S.formulas.map(f => `<option value="${f.id}">${esc(f.n)}</option>`).join('')}</select></label><label>Sacos completos (60 lb c/u)<input id=isc type=number inputmode=numeric step=1 min=0 value=0></label><label>Libras sueltas sin ensacar<input id=isb type=number inputmode=decimal step=any min=0 value=0></label><label>Costo por saco (B/., opcional)<input id=ico type=number inputmode=decimal step=any min=0 placeholder="Si no lo sabes, déjalo vacío"></label><button class=sm style="margin-top:12px">Agregar al concentrado</button></form>${S.elab.some(r => r.ini) ? `<h3>Registros iniciales</h3>${S.elab.filter(r => r.ini).map(r => `<div class="al ok"><span>${r.f} · ${esc(S.formulas.find(f => f.id == r.fo)?.n || '—')}</span><b>${ens(r.out)}</b><button class=sm onclick="delIni('${r.id}')">Eliminar</button></div>`).join('')}` : ''}
+<form onsubmit="return fSC(event)"><h3>Sacar concentrado (venta, otro uso…)</h3><p class=mu>Descuenta sacos que no se dieron al ganado.</p>${fdIn('fds')}<label>Fórmula<select id=sf>${S.formulas.map(f => `<option value="${f.id}">${esc(f.n)} (${ens(S.conc[f.id] || 0)})</option>`).join('')}</select></label><label>Motivo<select id=sm><option>Venta</option><option>Otro uso</option><option>Pérdida o merma</option><option>Corrección de conteo</option></select></label><label>Sacos completos (60 lb c/u)<input id=ssc type=number inputmode=decimal step=0.5 min=0 value=0></label><label>Libras sueltas<input id=ssb type=number inputmode=decimal step=any min=0 value=0></label><label>Nota (opcional)<input id=snt placeholder="Ej. vendido a un vecino"></label><label>Total cobrado (B/., opcional, si fue venta)<input id=sv type=number inputmode=decimal step=any min=0></label><button class=sm style="margin-top:12px">Descontar del concentrado</button></form>${(S.sc || []).length ? `<h3>Salidas registradas</h3>${S.sc.slice(-8).reverse().map(r => `<div class="al ok"><span><b>${esc(r.mo)}</b> · ${esc(S.formulas.find(f => f.id == r.fo)?.n || '—')}<br><small>${r.f}${r.nota ? ' · ' + esc(r.nota) : ''}${r.v ? ' · cobrado ' + mo(r.v) : ''}</small></span><b>${ens(r.k)}</b><button class=sm onclick="anularSC('${r.id}')">Anular</button></div>`).join('')}` : ''}
 <h2>Fórmulas (receta por barcada)</h2>${formulasHTML()}
 ` : ivT == 'ins' ? `<h2>Insumos en bodega</h2>${S.stock.map(x => x.tk ? tkCard(x) : `<div class="al ${!x.est && x.k < x.min ? 'er' : 'ok'}"><span>${esc(x.n)}${x.c ? ' · ' + mo(x.c) + '/' + uN(x) : ''}${x.est ? '<br><small>≈ Cantidad aproximada: no se descuenta todavía</small>' : ''}</span><b>${x.est ? '≈ ' : ''}${uCant(x, x.k)}</b>${uTxt(x, x.k) ? '<br><small>' + uTxt(x, x.k).trim() + '</small>' : ''}</div>`).join('') || '<p class=mu>Sin insumos registrados.</p>'}
 <form onsubmit="return fStock(event)">${fdIn()}<h3>Registrar compra de insumo</h3><label>Insumo<input id=sn list=sl placeholder="Ej. Soya" required oninput="autoU('k', S.stock.find(x => x.n.toLowerCase() == this.value.trim().toLowerCase()))"><datalist id=sl>${S.stock.map(x => `<option value="${esc(x.n)}">`).join('')}</datalist></label>${uHTML('k', 'Cantidad recibida')}<label>Total pagado (B/.)<input id=tp type=number inputmode=decimal step=any min=0 value=0></label><label>Avisar si baja de (libras, o unidades/tanques si se cuenta así)<input id=m type=number inputmode=numeric min=0 value=100></label><label style="display:flex;gap:8px;align-items:center"><input id=ae type=checkbox style="width:auto"> Inventario inicial aproximado (no se descuenta todavía)</label><p class=mu>Marca esto al registrar por primera vez un insumo cuya cantidad aún no se contó exacta. Solo aplica a insumos nuevos.</p><button class=sm style="margin-top:12px">Guardar compra</button></form>
@@ -580,6 +581,17 @@ ${subTabs(csT, [['res', 'Resumen y gasto'], ['ins', 'Insumos']], 'csT')}${csT ==
         }
         const regHoy = () => { const f = fdSel || hoy(), L = S.ali.filter(a => a.f == f).slice().reverse(); return `<h2>Alimentación registrada${f == hoy() ? ' hoy' : ' el ' + f}</h2>${L.map(a => `<div class="al ok"><span><b>${esc(S.lotes.find(l => l.id == a.l)?.n || '—')}</b> · ${esc(a.a)}<br><small>${a.t || ''}</small></span><b>${ens(a.k)}</b><button class=sm onclick="anularAli('${a.id}')">Anular</button></div>`).join('') || '<p class=mu>Todavía no hay registros.</p>'}` };
         const regElab = () => { const L = S.elab.filter(r => !r.ini).slice(-5).reverse(); return L.length ? `<h2>Últimas producciones</h2>${L.map(r => `<div class="al ok"><span><b>${esc(S.formulas.find(f => f.id == r.fo)?.n || '—')}</b> · ${r.nb} barcadas<br><small>${r.f}</small></span><b>${ens(r.out)}</b><button class=sm onclick="anularElab('${r.id}')">Anular</button></div>`).join('')}` : '' };
+        function fSC(e) {
+            e.preventDefault(); const f = S.formulas.find(x => x.id == $('#sf').value), k = +(((+$('#ssc').value || 0) * SACO) + (+$('#ssb').value || 0)).toFixed(2);
+            if (!f || !(k > 0)) { toast('Escribe cuántos sacos o libras salen', 1); return false }
+            const hay = S.conc[f.id] || 0; if (hay < k) { toast('No alcanza ' + f.n + ': quedan ' + ens(hay), 1); return false }
+            (S.sc = S.sc || []).push({ id: uid(), f: fdv('fds'), fo: f.id, k, mo: $('#sm').value, nota: $('#snt').value.trim(), v: +$('#sv').value || 0, cs: +(k * (S.cc[f.id] || 0)).toFixed(2) });
+            S.conc[f.id] = +(hay - k).toFixed(2); save(); toast('✔ ' + ens(k) + ' descontados de ' + f.n); render(); return false
+        }
+        function anularSC(id) {
+            const r = (S.sc || []).find(x => x.id == id); if (!r || !confirm('¿Anular esta salida de ' + ens(r.k) + '? Los sacos vuelven al concentrado.')) return;
+            S.conc[r.fo] = +((S.conc[r.fo] || 0) + r.k).toFixed(2); S.sc = S.sc.filter(x => x.id != id); recalcCostos(); save(); toast('✔ Salida anulada'); render()
+        }
         function fAli(e) {
             e.preventDefault(); const k = +$('#k').value * SACO, f = S.formulas.find(x => x.id == $('#a').value), l = $('#l').value; if (!(k > 0) || !f) { toast('Escribe la cantidad de sacos', 1); return false }
             const hay = S.conc[f.id] || 0; if (hay < k) { toast('No alcanza ' + f.n + ': quedan ' + ens(hay), 1); return false }
@@ -676,7 +688,7 @@ ${subTabs(csT, [['res', 'Resumen y gasto'], ['ins', 'Insumos']], 'csT')}${csT ==
         function recalcCostos() {
             S.elab.forEach(r => (r.ins || []).forEach(u => { if (u.c == null) u.c = S.stock.find(x => x.id == u.i)?.c || 0 }));
             S.formulas.forEach(f => {
-                const evs = [...S.elab.filter(r => r.fo == f.id).map(r => ({ e: 1, f: r.f, r })), ...S.ali.filter(a => a.fo == f.id).map(a => ({ e: 0, f: a.f, r: a }))].sort((x, y) => x.f < y.f ? -1 : x.f > y.f ? 1 : y.e - x.e);
+                const evs = [...S.elab.filter(r => r.fo == f.id).map(r => ({ e: 1, f: r.f, r })), ...S.ali.filter(a => a.fo == f.id).map(a => ({ e: 0, f: a.f, r: a })), ...(S.sc || []).filter(a => a.fo == f.id).map(a => ({ e: 0, f: a.f, r: a }))].sort((x, y) => x.f < y.f ? -1 : x.f > y.f ? 1 : y.e - x.e);
                 let lb = 0, cs = 0, cc = S.cc[f.id] || 0;
                 evs.forEach(v => { if (v.e) { if (!v.r.ini) v.r.costo = +(v.r.ins || []).reduce((t, u) => t + u.q * (u.c || 0), 0).toFixed(2); lb += v.r.out; cs += v.r.costo; cc = lb > 0 ? cs / lb : cc } else { v.r.cs = +(v.r.k * cc).toFixed(2); lb -= v.r.k; cs -= v.r.k * cc } });
                 if (evs.length) S.cc[f.id] = +cc.toFixed(4)
