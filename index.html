@@ -275,6 +275,34 @@
             background: var(--er)
         }
 
+        #sync {
+            position: fixed;
+            right: 10px;
+            bottom: calc(76px + env(safe-area-inset-bottom));
+            z-index: 5;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 16px;
+            background: #fff;
+            border: 1px solid var(--bd);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .15)
+        }
+
+        #sync.ok {
+            color: var(--ok)
+        }
+
+        #sync.pend {
+            color: var(--wa)
+        }
+
+        #sync.off,
+        #sync.err {
+            color: var(--er);
+            border-color: var(--er)
+        }
+
         .net {
             font-size: 13px;
             color: var(--mu)
@@ -334,6 +362,7 @@
 
 
     <main id="app"></main>
+    <div id=sync></div>
     <nav><button data-v="inicio" onclick="go('inicio')"><span>🏠</span>Inicio</button><button data-v="registrar"
             onclick="go('registrar')"><span>✏️</span>Registrar</button><button data-v="inventario"
             onclick="go('inventario')"><span>🐄</span>Inventario</button><button data-v="costos"
@@ -368,9 +397,15 @@
 
       let escuchando = null;
 
+let pend = 0;
+const setSync = e => { const el = document.getElementById('sync'); if (!el) return; const m = { ok: '✔ Sincronizado', pend: '⏳ Enviando…', off: '⚠ Sin conexión: se enviará al volver la señal', err: '⚠ No se pudo enviar' }[e]; el.textContent = m; el.className = e };
+addEventListener('online', () => setSync(pend ? 'pend' : 'ok'));
+addEventListener('offline', () => setSync('off'));
+setSync(navigator.onLine ? 'ok' : 'off');
 window.subir = () => {
     if (bloqueado || !auth.currentUser) return;
-    setDoc(ref, JSON.parse(JSON.stringify({ ...S, v: DATA_V }))).catch(err => console.error('Error al subir:', err));
+    pend++; setSync(navigator.onLine ? 'pend' : 'off');
+    setDoc(ref, JSON.parse(JSON.stringify({ ...S, v: DATA_V }))).then(() => { pend--; if (!pend) setSync('ok') }).catch(err => { pend--; console.error('Error al subir:', err); setSync('err') });
 };
 
 function escuchar() {
@@ -454,8 +489,8 @@ ${act().length ? `<div class=cards><div class=card><b>${fmt(sc(h))}</b>sacos rep
             registrar() {
                 if (!act().length) return '<h1>Registrar</h1>' + vacio();
                 const t = `<h1>Registrar</h1><div class=tabs><button class="${tab == 'ali' ? 'on' : ''}" onclick="go('registrar','ali')">Alimentación</button><button class="${tab == 'pes' ? 'on' : ''}" onclick="go('registrar','pes')">Pesaje</button><button class="${tab == 'ela' ? 'on' : ''}" onclick="go('registrar','ela')">Producción</button></div>`;
-                if (tab == 'ela') return t + `<form onsubmit="return fEla(event)">${fdIn()}<label>Fórmula<select id=fo onchange="armar()">${S.formulas.map(f => `<option value="${f.id}">${esc(f.n)}</option>`).join('')}</select></label><label>Barcadas del día<input id=nb type=number inputmode=numeric min=1 step=1 value=5 oninput="armar()"></label><h2>Insumos usados (lb)</h2><div id=ins></div><h2>Producción</h2><label>Sacos que salieron (60 lb c/u)<input id=sc type=number inputmode=numeric step=1 min=0 required></label><label>Sobra sin ensacar (lb)<input id=sb type=number inputmode=decimal step=any min=0 value=0></label><button class=big>Guardar producción</button></form>`;
-                if (tab == 'ali') return t + (S.formulas.length ? `<form onsubmit="return fAli(event)">${fdIn()}<label>Lote<select id=l onchange="$('#a').value=S.lotes.find(x=>x.id==this.value).fo||S.formulas[0].id">${opL(pre)}</select></label><label>Concentrado<select id=a>${S.formulas.map(f => `<option value="${f.id}"${f.id == (S.lotes.find(l => l.id == (pre || S.lotes[0].id)) || {}).fo ? ' selected' : ''}>${esc(f.n)} (${ens(S.conc[f.id] || 0)})</option>`).join('')}</select></label><label>Cantidad de sacos (60 lb c/u)<input id=k type=number inputmode=decimal step=0.5 min=0 required></label><button class=big>Guardar alimentación</button></form>` : '<div class="al wa">Aún no hay fórmulas. Créalas en Inventario.</div>');
+                if (tab == 'ela') return t + `<form onsubmit="return fEla(event)">${fdIn()}<label>Fórmula<select id=fo onchange="armar()">${S.formulas.map(f => `<option value="${f.id}">${esc(f.n)}</option>`).join('')}</select></label><label>Barcadas del día<input id=nb type=number inputmode=numeric min=1 step=1 value=5 oninput="armar()"></label><h2>Insumos usados (lb)</h2><div id=ins></div><h2>Producción</h2><label>Sacos que salieron (60 lb c/u)<input id=sc type=number inputmode=numeric step=1 min=0 required></label><label>Sobra sin ensacar (lb)<input id=sb type=number inputmode=decimal step=any min=0 value=0></label><button class=big>Guardar producción</button></form>` + regElab();
+                if (tab == 'ali') return t + (S.formulas.length ? `<form onsubmit="return fAli(event)">${fdIn()}<label>Lote<select id=l onchange="$('#a').value=S.lotes.find(x=>x.id==this.value).fo||S.formulas[0].id">${opL(pre)}</select></label><label>Concentrado<select id=a>${S.formulas.map(f => `<option value="${f.id}"${f.id == (S.lotes.find(l => l.id == (pre || S.lotes[0].id)) || {}).fo ? ' selected' : ''}>${esc(f.n)} (${ens(S.conc[f.id] || 0)})</option>`).join('')}</select></label><label>Cantidad de sacos (60 lb c/u)<input id=k type=number inputmode=decimal step=0.5 min=0 required></label><button class=big>Guardar alimentación</button></form>` + regHoy() : '<div class="al wa">Aún no hay fórmulas. Créalas en Inventario.</div>');
                 return t + `<form onsubmit="return fPes(event)">${fdIn()}<label>Lote<select id=l>${opL(pre)}</select></label><label>Peso promedio (lb)<input id=p type=number inputmode=decimal step=any min=0 required></label><button class=big>Guardar pesaje</button></form>`
             },
             inventario() {
@@ -518,7 +553,7 @@ ${subTabs(csT, [['res', 'Resumen y gasto'], ['ins', 'Insumos']], 'csT')}${csT ==
             if (!f || !(out > 0)) { toast('Escribe los sacos que salieron', 1); return false }
             const falta = usos.find(u => { const s = S.stock.find(x => x.id == u.i); return !s.est && !s.tk && s.k < u.q }); if (falta) { toast('No alcanza: ' + S.stock.find(s => s.id == falta.i).n, 1); return false }
             const costo = usos.reduce((t, u) => t + u.q * (S.stock.find(s => s.id == u.i).c || 0), 0), antes = S.conc[f.id] || 0;
-            usos.forEach(u => { const s = S.stock.find(x => x.id == u.i); u.c = s.c || 0; if (s.tk) s.cons = +((s.cons || 0) + u.q).toFixed(2); if (!s.est && !s.tk) s.k = +(s.k - u.q).toFixed(2) }); S.conc[f.id] = +(antes + out).toFixed(2); S.cc[f.id] = +(((antes * (S.cc[f.id] || 0)) + costo) / (antes + out)).toFixed(4);
+            usos.forEach(u => { const s = S.stock.find(x => x.id == u.i); u.c = s.c || 0; u.d = !s.est && !s.tk ? 1 : 0; if (s.tk) s.cons = +((s.cons || 0) + u.q).toFixed(2); if (!s.est && !s.tk) s.k = +(s.k - u.q).toFixed(2) }); S.conc[f.id] = +(antes + out).toFixed(2); S.cc[f.id] = +(((antes * (S.cc[f.id] || 0)) + costo) / (antes + out)).toFixed(4);
             S.elab.push({ id: uid(), f: fdv(), fo: f.id, nb: +$('#nb').value || 1, ins: usos, out, costo: +costo.toFixed(2) }); save(); toast('✔ Producción guardada'); render(); return false
         }
         function fIni(e) {
@@ -533,9 +568,22 @@ ${subTabs(csT, [['res', 'Resumen y gasto'], ['ins', 'Insumos']], 'csT')}${csT ==
             if ((S.conc[r.fo] || 0) < r.out) { toast('No se puede: ya se repartió parte de ese alimento', 1); return }
             S.conc[r.fo] = +(S.conc[r.fo] - r.out).toFixed(2); S.elab = S.elab.filter(x => x.id != id); recalcCostos(); save(); toast('✔ Registro eliminado'); render()
         }
+        function anularAli(id) {
+            const a = S.ali.find(x => x.id == id); if (!a || !confirm('¿Anular esta alimentación de ' + ens(a.k) + '?')) return;
+            S.conc[a.fo] = +((S.conc[a.fo] || 0) + a.k).toFixed(2); S.ali = S.ali.filter(x => x.id != id); recalcCostos(); save(); toast('✔ Alimentación anulada'); render()
+        }
+        function anularElab(id) {
+            const r = S.elab.find(x => x.id == id); if (!r || !confirm('¿Anular esta producción de ' + ens(r.out) + '? Se devolverán los insumos.')) return;
+            if ((S.conc[r.fo] || 0) < r.out) { toast('No se puede: ya se repartió parte de ese alimento', 1); return }
+            (r.ins || []).forEach(u => { const s = S.stock.find(x => x.id == u.i); if (!s) return; if (s.tk) s.cons = +Math.max(0, (s.cons || 0) - u.q).toFixed(2); else if (u.d ?? (!s.est)) s.k = +(s.k + u.q).toFixed(2) });
+            S.conc[r.fo] = +(S.conc[r.fo] - r.out).toFixed(2); S.elab = S.elab.filter(x => x.id != id); recalcCostos(); save(); toast('✔ Producción anulada'); render()
+        }
+        const regHoy = () => { const f = fdSel || hoy(), L = S.ali.filter(a => a.f == f).slice().reverse(); return `<h2>Alimentación registrada${f == hoy() ? ' hoy' : ' el ' + f}</h2>${L.map(a => `<div class="al ok"><span><b>${esc(S.lotes.find(l => l.id == a.l)?.n || '—')}</b> · ${esc(a.a)}<br><small>${a.t || ''}</small></span><b>${ens(a.k)}</b><button class=sm onclick="anularAli('${a.id}')">Anular</button></div>`).join('') || '<p class=mu>Todavía no hay registros.</p>'}` };
+        const regElab = () => { const L = S.elab.filter(r => !r.ini).slice(-5).reverse(); return L.length ? `<h2>Últimas producciones</h2>${L.map(r => `<div class="al ok"><span><b>${esc(S.formulas.find(f => f.id == r.fo)?.n || '—')}</b> · ${r.nb} barcadas<br><small>${r.f}</small></span><b>${ens(r.out)}</b><button class=sm onclick="anularElab('${r.id}')">Anular</button></div>`).join('')}` : '' };
         function fAli(e) {
             e.preventDefault(); const k = +$('#k').value * SACO, f = S.formulas.find(x => x.id == $('#a').value), l = $('#l').value; if (!(k > 0) || !f) { toast('Escribe la cantidad de sacos', 1); return false }
             const hay = S.conc[f.id] || 0; if (hay < k) { toast('No alcanza ' + f.n + ': quedan ' + ens(hay), 1); return false }
+            const ya = sumN(S.ali.filter(a => a.f == fdv() && a.l == l).map(a => a.k)); if (ya > 0 && !confirm((S.lotes.find(x => x.id == l)?.n || 'Este lote') + ' ya tiene ' + ens(ya) + ' registrados en esa fecha. ¿Agregar ' + ens(k) + ' más?')) return false
             S.ali.push({ id: uid(), f: fdv(), t: new Date().toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit' }), l, a: f.n, fo: f.id, k, cs: +(k * (S.cc[f.id] || 0)).toFixed(2) }); S.conc[f.id] = +(hay - k).toFixed(2); pre = l; save(); toast('✔ Alimentación guardada'); render(); return false
         }
         function fPes(e) {
