@@ -517,9 +517,8 @@ function escuchar() {
         if ((d.v || 1) > DATA_V) { bloqueado = true; toast('Hay una versión nueva de la app: recarga la página', 1); return }
         bloqueado = false;
         S = { ...JSON.parse(JSON.stringify(base)), ...d, v: DATA_V };
-        const migro = migrar();
+        migrar(); // solo en memoria: se guarda en la nube cuando haya un cambio real del usuario
         localStorage.setItem(K, JSON.stringify(S));
-        if (migro) window.subir();
         const a = document.activeElement;
         if (!a || !['INPUT', 'SELECT', 'TEXTAREA'].includes(a.tagName)) render();
     }, err => console.error('Error de sincronización:', err));
