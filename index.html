@@ -925,7 +925,7 @@ ${subTabs(csT, [['res', 'Resumen y gasto'], ['ins', 'Insumos']], 'csT')}${csT ==
         }
         addEventListener('online', render); addEventListener('offline', render);
         if ('serviceWorker' in navigator && location.protocol != 'file:') navigator.serviceWorker.register('sw.js');
-        if (migrar()) save();
+        if (migrar()) localStorage.setItem(K, JSON.stringify(S));
         render();
     </script>
 </body>
