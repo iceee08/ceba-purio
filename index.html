@@ -469,7 +469,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc, getDocs, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
         const firebaseConfig = {
@@ -524,6 +524,22 @@ function escuchar() {
     }, err => console.error('Error de sincronización:', err));
 }
 
+
+// Historial: copias del estado guardadas en documentos aparte (empresas/hist_*), comprimidas. Se conservan las últimas 40.
+const HIST_MAX = 40;
+window.histSnap = async (motivo, json) => {
+    if (!auth.currentUser) return;
+    try {
+        const o = JSON.parse(json), z = await gz(json), ult = (o.ali || []).map(a => a.f).sort().at(-1) || '';
+        const id = 'hist_' + Date.now();
+        await setDoc(doc(db, 'empresas', id), { t: new Date().toISOString(), m: motivo, z: z ? 1 : 0, d: z || json, n: { l: (o.lotes || []).length, a: (o.ali || []).length, u: ult } });
+        const all = (await getDocs(collection(db, 'empresas'))).docs.filter(x => x.id.startsWith('hist_')).map(x => x.id).sort().reverse();
+        for (const x of all.slice(HIST_MAX)) await deleteDoc(doc(db, 'empresas', x));
+    } catch (err) { console.error('Historial:', err); if (!window.histAvisado) { window.histAvisado = 1; toast('⚠ No se pudo guardar el historial (revisa los permisos de la base de datos)', 1) } }
+};
+window.histLista = async () => (await getDocs(collection(db, 'empresas'))).docs.filter(x => x.id.startsWith('hist_')).map(x => { const d = x.data(); return { id: x.id, t: d.t, m: d.m, n: d.n } }).sort((a, b) => b.id.localeCompare(a.id));
+window.histCargar = async id => { const x = await getDoc(doc(db, 'empresas', id)); if (!x.exists()) return null; const d = x.data(); return d.z ? await ungz(d.d) : d.d };
+
 onAuthStateChanged(auth, user => {
     console.log('2: sesión: ', user ? user.email : 'ninguna');
     if (escuchando) { escuchando(); escuchando = null }
@@ -555,7 +571,9 @@ window.salir = async () => {
     </script>
     <script>
         const K = 'cebacontrol_v1', vacioS = () => ({ sc: [], lotes: [], ali: [], pes: [], stock: [], conc: {}, cc: {}, elab: [], fases: [], compras: [], sug: [], med: [], formulas: [1, 2, 3, 4].map(i => ({ id: 'f' + i, n: 'Fórmula ' + i, ing: [] })) }); let S = { ...vacioS(), ...JSON.parse(localStorage.getItem(K) || '{}') };
-        const save = () => { localStorage.setItem(K, JSON.stringify(S)); if (window.subir) window.subir() }, $ = s => document.querySelector(s), uid = () => Math.random().toString(36).slice(2, 9);
+        const histHash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h },
+            histPush = (motivo, json, force) => { if (!window.histSnap) return; json = json || JSON.stringify(S); const h = String(histHash(json)), t = Date.now(); if (localStorage.getItem(K + '_hh') == h) return; if (!force && t - (+localStorage.getItem(K + '_ht') || 0) < 20 * 60e3) return; localStorage.setItem(K + '_hh', h); localStorage.setItem(K + '_ht', t); window.histSnap(motivo, json) },
+            save = () => { const pre = localStorage.getItem(K); if (pre) histPush('Automático', pre); localStorage.setItem(K, JSON.stringify(S)); if (window.subir) window.subir() }, $ = s => document.querySelector(s), uid = () => Math.random().toString(36).slice(2, 9);
         const hoy = () => new Date().toLocaleDateString('sv'), esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const SACO = 60;
         const fdv = (id = 'fdt') => $('#' + id)?.value || hoy();
@@ -639,7 +657,7 @@ ${act().length ? `<div class=cards><div class=card><b>${fmt(sc(h))}</b>sacos rep
 ${S.stock.length ? `<form onsubmit="return fPrecio(event)"><h3>Corregir precio de un insumo</h3><label>Insumo<select id=ps onchange="verPrecio()">${S.stock.map(x => `<option value="${x.id}">${esc(x.n)}</option>`).join('')}</select></label><p class=mu id=pa></p><label>Precio (B/.)<input id=pq type=number inputmode=decimal step=any min=0 required oninput="calcP()"></label><label id=pul>Precio por<select id=pu onchange="calcP()"><option value=1>Libra</option><option value=100>Quintal (100 lb)</option><option value=otra>Otra unidad (saco, paca…)</option></select></label><label id=ppl style="display:none">Peso promedio de cada una (lb)<input id=pp type=number inputmode=decimal step=any min=0 value=100 oninput="calcP()"></label><p class=mu id=pt></p><label style="display:flex;gap:8px;align-items:center"><input id=pr type=checkbox checked style="width:auto"> Recalcular también los costos ya registrados</label><button class=sm style="margin-top:12px">Guardar precio</button></form>` : ''}
 ${S.stock.some(x => !x.cnt && !x.tk) ? `<form onsubmit="return fUnid(event)"><h3>Cambiar la unidad de un insumo</h3><p class=mu>Solo cambia cómo se muestra y cómo se escribe la cantidad en las fórmulas y la producción. Las cantidades guardadas no cambian.</p><label>Insumo<select id=us onchange="autoUn()">${S.stock.filter(x => !x.cnt && !x.tk).map(x => `<option value="${x.id}">${esc(x.n)}</option>`).join('')}</select></label><label>Mostrar en<select id=uu onchange="calcUn()"><option value=lb>Libras</option><option value=otra>Otra unidad con peso (saco, bolsa…)</option></select></label><span id=unw style="display:none"><label>Nombre de la unidad<input id=unn placeholder="Ej. bolsa"></label><label>Peso de cada una (lb)<input id=unp type=number inputmode=decimal step=any min=0></label></span><button class=sm style="margin-top:12px">Guardar unidad</button></form>` : ''}
 ${S.stock.some(x => x.est) ? `<form onsubmit="return fActivar(event)"><h3>Activar descuento con conteo exacto</h3><p class=mu>Para los insumos marcados como aproximados. Al activar, el inventario pasa a descontarse. Si ya se produjo desde la fecha del conteo, eso se resta solo.</p><label>Insumo<select id=xs onchange="autoU('x', S.stock.find(x => x.id == this.value))">${S.stock.filter(x => x.est).map(x => `<option value="${x.id}">${esc(x.n)}</option>`).join('')}</select></label>${uHTML('x', 'Cantidad exacta contada')}<label>Fecha del conteo (al terminar ese día)<input id=xf type=date value="${hoy()}" max="${hoy()}"></label><button class=sm style="margin-top:12px">Activar descuento</button></form>` : ''}
-<h3>Respaldo</h3><p class=mu>Descarga una copia de todos tus datos, o restaura una copia guardada. Al restaurar, se reemplaza todo lo que hay ahora, también en la nube.</p><p><button class=sm onclick="respaldo()">Descargar respaldo</button></p><label>Restaurar desde un archivo de respaldo<input type=file accept=".json,application/json" onchange="restaurar(this)"></label>
+<h3>Respaldo</h3><p class=mu>Descarga una copia de todos tus datos, o restaura una copia guardada. Al restaurar, se reemplaza todo lo que hay ahora, también en la nube.</p><p><button class=sm onclick="respaldo()">Descargar respaldo</button></p><label>Restaurar desde un archivo de respaldo<input type=file accept=".json,application/json" onchange="restaurar(this)"></label><h3>Historial</h3><p class=mu>La app guarda copias automáticas de tus datos (las últimas 40) cada vez que haces un cambio. Si algo sale mal, puedes volver a un punto anterior.</p><p><button class=sm onclick="histManual()">Guardar un punto ahora</button> <button class=sm onclick="histVer()">Ver puntos guardados</button></p><div id=hl></div>
 <p><button class=sm onclick="borrarTodo()">Borrar todos los datos</button></p>`}`},
             costos() {
                 const dias = +cd, ds = Array.from({ length: dias }, (_, i) => new Date(Date.now() - i * 864e5).toLocaleDateString('sv')), desde = ds[dias - 1];
@@ -914,6 +932,26 @@ ${subTabs(csT, [['res', 'Resumen y gasto'], ['ins', 'Insumos']], 'csT')}${csT ==
             };
             r.readAsText(f)
         }
+
+        async function gz(str) { try { const b = new Uint8Array(await new Response(new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer()); let t = ''; for (let i = 0; i < b.length; i += 8192) t += String.fromCharCode.apply(null, b.subarray(i, i + 8192)); return btoa(t) } catch (e) { return null } }
+        async function ungz(b64) { const t = atob(b64), b = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) b[i] = t.charCodeAt(i); return await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).text() }
+        function histManual() { if (!window.histSnap) { toast('Sin conexión con la nube', 1); return } localStorage.removeItem(K + '_hh'); histPush('Manual', null, true); toast('✔ Punto guardado') }
+        async function histVer() {
+            const e = $('#hl'); if (!e) return; if (!window.histLista) { e.innerHTML = '<p class=mu>Sin conexión con la nube.</p>'; return } e.innerHTML = '<p class=mu>Cargando…</p>';
+            try {
+                const L = await window.histLista();
+                e.innerHTML = L.length ? L.map(x => `<div class="al ok"><span><b>${esc(new Date(x.t).toLocaleString('es-PA', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }))}</b> · ${esc(x.m)}<br><small>${x.n ? x.n.l + ' lotes · ' + x.n.a + ' alimentaciones · última ' + (x.n.u || '—') : ''}</small></span><button class=sm onclick="histVolver('${x.id}')">Volver a este punto</button></div>`).join('') : '<p class=mu>Todavía no hay puntos guardados. Se crean solos al hacer cambios.</p>'
+            } catch (err) { e.innerHTML = '<p class=mu>No se pudo leer el historial.</p>' }
+        }
+        async function histVolver(id) {
+            try {
+                const j = await window.histCargar(id); if (!j) { toast('Ese punto ya no existe', 1); return } const d = JSON.parse(j), ult = d.ali.map(a => a.f).sort().at(-1) || 'sin registros';
+                if (!confirm('Volver a un punto con ' + d.lotes.length + ' lotes y ' + d.ali.length + ' alimentaciones (la última: ' + ult + '). Se reemplaza todo lo que hay ahora, también en la nube. Antes se guarda un punto con los datos actuales. ¿Continuar?')) return;
+                histPush('Antes de volver atrás', null, true);
+                S = { ...vacioS(), ...d }; migrar(); save(); render(); toast('✔ Datos restaurados a ese punto')
+            } catch (err) { toast('No se pudo restaurar ese punto', 1) }
+        }
+        ['anularAli', 'anularElab', 'anularSC', 'delRow', 'delLote', 'delIni', 'medDel', 'restaurar', 'borrarTodo'].forEach(n => { const f = window[n]; if (typeof f == 'function') window[n] = function () { histPush(({ anularAli: 'Antes de anular una alimentación', anularElab: 'Antes de anular una producción', anularSC: 'Antes de anular una salida', delRow: 'Antes de eliminar un ingreso o salida de lote', delLote: 'Antes de eliminar un lote', delIni: 'Antes de eliminar un registro inicial', medDel: 'Antes de anular una medicación', restaurar: 'Antes de restaurar un respaldo', borrarTodo: 'Antes de borrar todos los datos' })[n], null, true); return f.apply(this, arguments) } });
         function borrarTodo() { if (prompt('Esto borra TODOS los datos de la app. Escribe BORRAR para confirmar.') !== 'BORRAR') return; S = vacioS(); save(); render(); toast('Datos borrados') }
         function formulasHTML() {
             return S.formulas.map(f => {
